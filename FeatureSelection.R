@@ -10,15 +10,15 @@ library(stringr)
 
 
 FeatureSelection <- function(data, 
-                              name_respuesta, 
-                              step = 100, 
-                              method = c('boruta','ag',
-                                         'Filtrado','Stepwise',
-                                         'stepVIF'), 
-                              plot = TRUE,
-                              importance = TRUE,
-                              family = "binomial", 
-                              VIF = 5) { 
+                             name_respuesta, 
+                             step = 100, 
+                             method = c('boruta','ag',
+                                        'Filtrado','Stepwise',
+                                        'stepVIF'), 
+                             plot = TRUE,
+                             importance = TRUE,
+                             family = "binomial", 
+                             VIF = 5) { 
   
   
   if (!(name_respuesta %in% colnames(data))) {
@@ -40,7 +40,7 @@ FeatureSelection <- function(data,
   doParallel::registerDoParallel(cl)
   
   
-
+  
   
   
   base_final <- data.frame()
@@ -84,17 +84,17 @@ FeatureSelection <- function(data,
   if ('ag' %in% method) {
     set.seed(123)
     agr <- caret::gafs(x = data |> dplyr::select(-dplyr::all_of(name_respuesta)),
-                      y = vec_respuesta,
-                      iters = 10,
-                      popSize = 10,
-                      ntree = 100,
-                      gafsControl = caret::gafsControl(
-                        functions = caret::rfGA,
-                        method = "cv",
-                        number = 5,
-                        allowParallel = TRUE,
-                        genParallel = TRUE, 
-                        verbose = FALSE)
+                       y = vec_respuesta,
+                       iters = 10,
+                       popSize = 10,
+                       ntree = 100,
+                       gafsControl = caret::gafsControl(
+                         functions = caret::rfGA,
+                         method = "cv",
+                         number = 5,
+                         allowParallel = TRUE,
+                         genParallel = TRUE, 
+                         verbose = FALSE)
     )
     res_ga <- data.frame(
       "Metodo" = "AG",
@@ -110,8 +110,8 @@ FeatureSelection <- function(data,
     Var_Seleccionadas$AG <- var_ag
     
     fml_AG<- as.formula(paste(name_respuesta, 
-                                   paste(agr$optVariables, collapse = '+'),
-                                   sep = "~"))
+                              paste(agr$optVariables, collapse = '+'),
+                              sep = "~"))
     
     formulas$AG  <- fml_AG
     
@@ -165,8 +165,8 @@ FeatureSelection <- function(data,
     
     
     fml_FILT<- as.formula(paste(name_respuesta, 
-                              paste(fil$optVariables, collapse = '+'),
-                              sep = "~"))
+                                paste(fil$optVariables, collapse = '+'),
+                                sep = "~"))
     
     formulas$Filtrado <- fml_FILT
     
@@ -217,8 +217,8 @@ FeatureSelection <- function(data,
     Var_Seleccionadas$StepwiseForward <- var_Step
     
     fml_StepForward <- as.formula(paste(name_respuesta, 
-                                paste(names(step_for$finalModel$coefficients)[-1], collapse = '+'),
-                                sep = "~"))
+                                        paste(names(step_for$finalModel$coefficients)[-1], collapse = '+'),
+                                        sep = "~"))
     
     formulas$StepwiseForward <- fml_StepForward
     
@@ -243,90 +243,90 @@ FeatureSelection <- function(data,
   
   if ('stepVIF' %in% method) {
     if('Stepwise' %in% method){
-    fml_step <- as.formula(
-      paste(name_respuesta, 
-            paste(stringr::str_replace_all(
-              as.character(paste(names(step_for$finalModel$coefficients)[-1], 
-                                collapse = ", ")), ',' , "+")), 
-            sep = "~"))
-    
-    modelo_step <- stats::glm(fml_step, data = data, family = family)
-    
-    vif_step <- data.frame(variable = names(car::vif(modelo_step)),
-                           valor = car::vif(modelo_step),
-                           row.names = NULL)
-    vif_step <-
-      vif_step[with(vif_step, order(-vif_step$valor)), ]
-    
-    while (vif_step[1, 2] > VIF) {
-      var_selec_con_vif <-
-        vif_step[-c(1), 1]
+      fml_step <- as.formula(
+        paste(name_respuesta, 
+              paste(stringr::str_replace_all(
+                as.character(paste(names(step_for$finalModel$coefficients)[-1], 
+                                   collapse = ", ")), ',' , "+")), 
+              sep = "~"))
       
-      fml_new_step <-
-        as.formula(paste(name_respuesta, 
-                         paste(var_selec_con_vif, collapse = "+"),
-                         sep = "~"))
+      modelo_step <- stats::glm(fml_step, data = data, family = family)
       
-      modelo_step <- stats::glm(fml_new_step,
-                             data = data,
-                             family = family)
-      
-      vif_step <- data.frame(
-        variable = names(car::vif(modelo_step)),
-        valor = (car::vif(modelo_step)),
-        row.names = NULL
-      )
-      
-      vif_step  <-
+      vif_step <- data.frame(variable = names(car::vif(modelo_step)),
+                             valor = car::vif(modelo_step),
+                             row.names = NULL)
+      vif_step <-
         vif_step[with(vif_step, order(-vif_step$valor)), ]
-      vif_step
-    }
-    
-    var_vif <- summary(modelo_step)
-    
-    Coef <- data.frame(var_vif$coefficients)
-    
-    
-    
-    var_significativas <- row.names(Coef[Coef$Pr...z.. < 0.05, ])[-1]
-    
-    res_Step_VIF_Pv <- data.frame(
-      "Metodo" = "Step Forward + vif + pv",
-      # "Var Seleccionadas" = paste(var_significativas, 
-      #                             collapse = " , "),
-      "nro var" = length(var_significativas),
-      row.names = NULL)
-    
-    base_final <- rbind(base_final, res_Step_VIF_Pv)
-    
-    
-    
-    Var_Seleccionadas$StepVIF <- as.character(var_significativas)
-    
-    fml_StepVIF <- as.formula(paste(name_respuesta, 
-                                        paste(var_significativas, collapse = '+'),
-                                        sep = "~"))
-    
-    formulas$Step_VIF_Pv <-  fml_StepVIF
-    
-    
-    if('stepVIF' %in% method & importance) {
       
-      modelo_step2 <- stats::glm(fml_StepVIF,
-                                data = data,
-                                family = family)
+      while (vif_step[1, 2] > VIF) {
+        var_selec_con_vif <-
+          vif_step[-c(1), 1]
+        
+        fml_new_step <-
+          as.formula(paste(name_respuesta, 
+                           paste(var_selec_con_vif, collapse = "+"),
+                           sep = "~"))
+        
+        modelo_step <- stats::glm(fml_new_step,
+                                  data = data,
+                                  family = family)
+        
+        vif_step <- data.frame(
+          variable = names(car::vif(modelo_step)),
+          valor = (car::vif(modelo_step)),
+          row.names = NULL
+        )
+        
+        vif_step  <-
+          vif_step[with(vif_step, order(-vif_step$valor)), ]
+        vif_step
+      }
       
-      imporSVP <- caret::varImp(modelo_step2, scale = T)
+      var_vif <- summary(modelo_step)
       
-      plot_importancia_StepVIFPv <- ggplot2::ggplot(imporSVP,aes(x=stats::reorder(rownames(imporSVP), Overall),y= Overall)) +
-        geom_bar(fill='skyblue', size=0.5, alpha=0.6, stat = 'identity') +
-        xlab('Variable')+
-        ylab('Overall Importance by Step+VIF+PV')+
-        theme_minimal() +
-        coord_flip()
+      Coef <- data.frame(var_vif$coefficients)
       
-      graficos$Importance_Step_VIF_Pv <- plot_importancia_StepVIFPv
-    }
+      
+      
+      var_significativas <- row.names(Coef[Coef$Pr...z.. < 0.05, ])[-1]
+      
+      res_Step_VIF_Pv <- data.frame(
+        "Metodo" = "Step Forward + vif + pv",
+        # "Var Seleccionadas" = paste(var_significativas, 
+        #                             collapse = " , "),
+        "nro var" = length(var_significativas),
+        row.names = NULL)
+      
+      base_final <- rbind(base_final, res_Step_VIF_Pv)
+      
+      
+      
+      Var_Seleccionadas$StepVIF <- as.character(var_significativas)
+      
+      fml_StepVIF <- as.formula(paste(name_respuesta, 
+                                      paste(var_significativas, collapse = '+'),
+                                      sep = "~"))
+      
+      formulas$Step_VIF_Pv <-  fml_StepVIF
+      
+      
+      if('stepVIF' %in% method & importance) {
+        
+        modelo_step2 <- stats::glm(fml_StepVIF,
+                                   data = data,
+                                   family = family)
+        
+        imporSVP <- caret::varImp(modelo_step2, scale = T)
+        
+        plot_importancia_StepVIFPv <- ggplot2::ggplot(imporSVP,aes(x=stats::reorder(rownames(imporSVP), Overall),y= Overall)) +
+          geom_bar(fill='skyblue', size=0.5, alpha=0.6, stat = 'identity') +
+          xlab('Variable')+
+          ylab('Overall Importance by Step+VIF+PV')+
+          theme_minimal() +
+          coord_flip()
+        
+        graficos$Importance_Step_VIF_Pv <- plot_importancia_StepVIFPv
+      }
     }
     else (cat('WARNING: StepVIF WAS NOT IMPLEMENTED. To implement StepVIF you must implement Stepwise'))
     
@@ -340,7 +340,8 @@ FeatureSelection <- function(data,
   doParallel::stopImplicitCluster()
   return(list('Nro Variables'= base_final, 
               'Formulas'=formulas,
-              'Var Seleccionadas' = Var_Seleccionadas))
+              'Var Seleccionadas' = Var_Seleccionadas,
+              'plots'=graficos))
 } 
 
 
@@ -370,128 +371,128 @@ Ajustes <- function(data,
   
   
   for (i in seq_len(n)) {
-  entrenar <- caret::createDataPartition(
-    vec_respuesta,
-    p = p,
-    list = F,
-    times = 1
-  )
-  Entrenamiento <- data[entrenar,]
-  Validacion <- data[-entrenar,] 
-  
-  trControl <- caret::trainControl(
-    method = method_cv,
-    number = number,
-    allowParallel = F,
-    savePredictions = T)
-  
-  if('glm' %in% Model) {
-    for (i in seq(length(formulas))){
-      modelo <- caret::train(
-        formulas[[i]],
-        data = Entrenamiento,
-        trControl =  trControl,
-        family = "binomial",
-        method = "glm",
-        metric = "Accuracy"
-      )
+    entrenar <- caret::createDataPartition(
+      vec_respuesta,
+      p = p,
+      list = F,
+      times = 1
+    )
+    Entrenamiento <- data[entrenar,]
+    Validacion <- data[-entrenar,] 
+    
+    trControl <- caret::trainControl(
+      method = method_cv,
+      number = number,
+      allowParallel = F,
+      savePredictions = T)
+    
+    if('glm' %in% Model) {
+      for (i in seq(length(formulas))){
+        modelo <- caret::train(
+          formulas[[i]],
+          data = Entrenamiento,
+          trControl =  trControl,
+          family = "binomial",
+          method = "glm",
+          metric = "Accuracy"
+        )
+        
+        pred <-  predict(modelo, Validacion)
+        
+        pred_en_prob <-  predict(modelo, Validacion, type = "prob")
+        Predichos <- rbind(Predichos, data.frame(Predichos = pred_en_prob,
+                                                 Observados = Validacion[[name_respuesta]],
+                                                 Modelo = "Logistic Regresion",
+                                                 Seleccion = names(formulas)[[i]]))
+        
+        
+        
+        
+        resultados <- data.frame(
+          n = n,
+          Acc_train = modelo$results$Accuracy,
+          Acc_test = caret::confusionMatrix(Validacion[[name_respuesta]], pred,
+                                            positive = '1', mode = 'everything')$overall['Accuracy'],
+          Spe_test = caret::confusionMatrix(Validacion[[name_respuesta]], pred,
+                                            positive = '1', mode = 'everything')$byClass['Specificity'],
+          Sen_test = caret::confusionMatrix(Validacion[[name_respuesta]], pred,
+                                            positive = '1', mode = 'everything')$byClass['Sensitivity'],
+          AUC_test = rfUtilities::accuracy(pred, Validacion[[name_respuesta]])$auc,
+          row.names = NULL
+        )
+        
+        resultados$Modelo <- "Log"
+        resultados$Seleccion <- names(formulas)[[i]]
+        Metricas <- rbind(Metricas,resultados)
+      }
       
-      pred <-  predict(modelo, Validacion)
-      
-      pred_en_prob <-  predict(modelo, Validacion, type = "prob")
-      Predichos <- rbind(Predichos, data.frame(Predichos = pred_en_prob,
-                                               Observados = Validacion[[name_respuesta]],
-                                               Modelo = "Logistic Regresion",
-                                               Seleccion = names(formulas)[[i]]))
-      
-      
-      
-
-      resultados <- data.frame(
-        n = n,
-        Acc_train = modelo$results$Accuracy,
-        Acc_test = caret::confusionMatrix(Validacion[[name_respuesta]], pred,
-                                     positive = '1', mode = 'everything')$overall['Accuracy'],
-        Spe_test = caret::confusionMatrix(Validacion[[name_respuesta]], pred,
-                                     positive = '1', mode = 'everything')$byClass['Specificity'],
-        Sen_test = caret::confusionMatrix(Validacion[[name_respuesta]], pred,
-                                     positive = '1', mode = 'everything')$byClass['Sensitivity'],
-        AUC_test = rfUtilities::accuracy(pred, Validacion[[name_respuesta]])$auc,
-        row.names = NULL
-      )
-      
-      resultados$Modelo <- "Log"
-      resultados$Seleccion <- names(formulas)[[i]]
-      Metricas <- rbind(Metricas,resultados)
     }
     
-  }
-  
-  if('rf' %in% Model){
-    for (i in seq(length(formulas))){
-      modelo <- caret::train(
-        formulas[[i]],
-        data = Entrenamiento,
-        trControl =  trControl,
-        method = "rf",
-        metric = "Accuracy"
-      )
-      
-      pred <- predict(modelo, Validacion)
-      
-      
-      pred_en_prob <-  predict(modelo, Validacion, type = "prob")
-      Predichos <- rbind(Predichos, data.frame(Predichos = pred_en_prob,
-                                               Observados = Validacion[[name_respuesta]],
-                                               Modelo = "Random Forest",
-                                               Seleccion = names(formulas)[[i]]))
-      
-      
-      
-      
-      resultados <- data.frame(
-        n = n,
-        Acc_train = max(modelo$results$Accuracy),
-        Acc_test = caret::confusionMatrix(Validacion[[name_respuesta]], pred,
-                                          positive = '1', 
-                                          mode = 'everything')$overall['Accuracy'],
-        Spe_test = caret::confusionMatrix(Validacion[[name_respuesta]], pred,
-                                          positive = '1', 
-                                          mode = 'everything')$byClass['Specificity'],
-        Sen_test = caret::confusionMatrix(Validacion[[name_respuesta]], pred,
-                                          positive = '1', 
-                                          mode = 'everything')$byClass['Sensitivity'],
-        AUC_test = rfUtilities::accuracy(pred, Validacion[[name_respuesta]])$auc,
-        row.names = NULL
-      )
-      
-      resultados$Modelo <- "RF"
-      resultados$Seleccion <- names(formulas)[[i]]
-      Metricas <- rbind(Metricas,resultados)
+    if('rf' %in% Model){
+      for (i in seq(length(formulas))){
+        modelo <- caret::train(
+          formulas[[i]],
+          data = Entrenamiento,
+          trControl =  trControl,
+          method = "rf",
+          metric = "Accuracy"
+        )
+        
+        pred <- predict(modelo, Validacion)
+        
+        
+        pred_en_prob <-  predict(modelo, Validacion, type = "prob")
+        Predichos <- rbind(Predichos, data.frame(Predichos = pred_en_prob,
+                                                 Observados = Validacion[[name_respuesta]],
+                                                 Modelo = "Random Forest",
+                                                 Seleccion = names(formulas)[[i]]))
+        
+        
+        
+        
+        resultados <- data.frame(
+          n = n,
+          Acc_train = max(modelo$results$Accuracy),
+          Acc_test = caret::confusionMatrix(Validacion[[name_respuesta]], pred,
+                                            positive = '1', 
+                                            mode = 'everything')$overall['Accuracy'],
+          Spe_test = caret::confusionMatrix(Validacion[[name_respuesta]], pred,
+                                            positive = '1', 
+                                            mode = 'everything')$byClass['Specificity'],
+          Sen_test = caret::confusionMatrix(Validacion[[name_respuesta]], pred,
+                                            positive = '1', 
+                                            mode = 'everything')$byClass['Sensitivity'],
+          AUC_test = rfUtilities::accuracy(pred, Validacion[[name_respuesta]])$auc,
+          row.names = NULL
+        )
+        
+        resultados$Modelo <- "RF"
+        resultados$Seleccion <- names(formulas)[[i]]
+        Metricas <- rbind(Metricas,resultados)
+      }
     }
-  }
-  
+    
   } 
   MetricasF <- rbind(MetricasF,Metricas)
   PredichosF <- rbind(PredichosF,Predichos)
-
+  
   
   if (plotroc) {
     grupos <-  split(x = PredichosF, f = list(PredichosF$Modelo, PredichosF$Seleccion), drop = TRUE) |> 
-    lapply(FUN = \(x) {
-      pROC::roc(Observados ~ Predichos.1, data = x)
-     })
-  
-
-  plot_roc <- pROC::ggroc(grupos) + 
-    theme_minimal()+
-    geom_abline(slope = 1, intercept = 1, linetype = "dashed")+
-    scale_color_discrete(name = "Combinacion Seleccion y Ajuste")
+      lapply(FUN = \(x) {
+        pROC::roc(Observados ~ Predichos.1, data = x)
+      })
+    
+    
+    plot_roc <- pROC::ggroc(grupos) + 
+      theme_minimal()+
+      geom_abline(slope = 1, intercept = 1, linetype = "dashed")+
+      scale_color_discrete(name = "Combinacion Seleccion y Ajuste")
   }
- 
+  
   
   return(list(Metricas = MetricasF,Predichos = PredichosF, Plot = plot_roc))
-  }
+}
 
 
 poroto <-
@@ -503,26 +504,22 @@ poroto <-
     na.strings = "."
   )
 
-names(poroto)
-
-colnames(poroto) <- noquote(c("Y",(paste0("X",seq(ncol(poroto)-1)))))
-poroto
-
 set.seed(1234)
 seleccion <- FeatureSelection(data  = poroto, 
-                               name_respuesta = "Y", 
-                               step = 100, 
-                               method = c('boruta','ag',
-                                          'Filtrado','Stepwise'),
-                               plot = TRUE,
-                               importance = TRUE,
-                               family = "binomial", 
-                               VIF = 5)
+                              name_respuesta = "Y", 
+                              step = 100, 
+                              method = c('boruta','ag',
+                                         'Filtrado','Stepwise'),
+                              plot = TRUE,
+                              importance = TRUE,
+                              family = "binomial", 
+                              VIF = 5)
 
 
 seleccion$`Nro Variables`
 seleccion$Formulas
 seleccion$`Var Seleccionadas`
+
 
 library(ggVennDiagram)
 
@@ -558,4 +555,6 @@ resumen <- validacion$Metricas |> dplyr::group_by(Modelo, Seleccion) |>
 
 summary(validacion$Metricas)
 validacion$Plot
+
+
 
