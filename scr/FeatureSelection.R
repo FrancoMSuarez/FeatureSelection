@@ -130,11 +130,9 @@ FeatureSelection <- function(data,
     formulas$AG  <- fml_AG
     
     if ('ag' %in% method & importance) {
-      importancia_ag <- caret::varImp(
-        agr,
-        metric = agr$control$metric["external"],
-        maximize = agr$control$maximize["external"]
-      )
+      
+      caret::varImp(agr, scale = T)
+      importancia_ag <- data.frame(agr[["fit"]][["importance"]])
       
       imp_ag <- importancia_ag |>
         dplyr::filter(rownames(importancia_ag) %in% agr$optVariables &
@@ -142,8 +140,8 @@ FeatureSelection <- function(data,
       
       plot_importancia_ag <-
         ggplot2::ggplot(imp_ag, aes(
-          x = stats::reorder(rownames(imp_ag), Accuracy),
-          y = Accuracy
+          x = stats::reorder(rownames(imp_ag), MeanDecreaseGini),
+          y = MeanDecreaseGini
         )) +
         geom_bar(
           fill = 'skyblue',
@@ -152,7 +150,7 @@ FeatureSelection <- function(data,
           stat = 'identity'
         ) +
         xlab('Variable') +
-        ylab('Overall Importance by AG') +
+        ylab('Overall Importance by AG (MeanDecreaseGini)') +
         theme_minimal() +
         theme(axis.text.y = element_text(size = 5)) +
         coord_flip()
@@ -278,10 +276,14 @@ FeatureSelection <- function(data,
     
     if ('Lasso' %in% method & importance) {
       imporLASSO <- caret::varImp(lasso, scale = T)
+      misvariables <- imporLASSO[["importance"]]
+      misvariables <- data.frame("variable" = rownames(misvariables),
+                                 Overall = misvariables)
+      misvariablesPlot <- misvariables[0 < misvariables[["Overall"]],]
       
       plot_importancia_lasso <-
-        ggplot2::ggplot(imporLASSO, aes(
-          x = stats::reorder(rownames(imporLASSO), Overall),
+        ggplot2::ggplot(misvariablesPlot, aes(
+          x = stats::reorder(variable, Overall),
           y = Overall
         )) +
         geom_bar(
