@@ -2,6 +2,8 @@ library(Boruta)
 library(caret)
 library(parallel)
 library(stringr)
+source("scr/Ajuste.R")
+source("scr/FeatureSelection.R")
 
 poroto <-
   read.table(
