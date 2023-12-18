@@ -251,7 +251,8 @@ FeatureSelection <- function(data,
     var_lasso <- data.frame(as.matrix(coef(lasso$finalModel, 
                                            lasso$bestTune$lambda)))
     var_select <- row.names(var_lasso)[var_lasso$s1!=0]
-    var_select <- var_select[!var_select %in% ("(Intercept)")]
+    
+    var_select <- var_select[!agrepl("Intercept", var_select)]
     
     Var_Seleccionadas$LASSO <- as.character(var_select)
     
@@ -378,17 +379,26 @@ FeatureSelection <- function(data,
   ## Stepwise + VIF + pvalor ----  
   if ('stepVIF' %in% method) {
     if ('Stepwise' %in% method) {
-      fml_step <- as.formula(paste(name_respuesta,
-                                   paste(
-                                     stringr::str_replace_all(as.character(paste(
-                                       names(step_for$finalModel$coefficients)[-1],
-                                       collapse = ", "
-                                     )), ',' , "+")
-                                   ),
-                                   sep = "~"))
+      
+      # myVars <- names(step_for$finalModel$coefficients)
+      # myVars <- myVars[!agrepl("Intercept", myVars)]
+      # 
+      # fml_step <- as.formula(paste(name_respuesta,
+      #                              "~",
+      #                              paste(myVars,
+      #                                    collapse = "+")))
+        
+        # as.formula(paste(name_respuesta,
+        #                            paste(
+        #                              stringr::str_replace_all(as.character(paste(
+        #                                names(step_for$finalModel$coefficients)[-1],
+        #                                collapse = ", "
+        #                              )), ',' , "+")
+        #                            ),
+        #                            sep = "~"))
       
       modelo_step <-
-        stats::glm(fml_step, data = data, family = family)
+        stats::glm(fml_StepForward, data = data, family = family)
       
       vif_step <-
         data.frame(
@@ -396,6 +406,7 @@ FeatureSelection <- function(data,
           valor = car::vif(modelo_step),
           row.names = NULL
         )
+      
       vif_step <-
         vif_step[with(vif_step, order(-vif_step$valor)),]
       
@@ -432,7 +443,9 @@ FeatureSelection <- function(data,
       
       
       var_significativas <-
-        row.names(Coef[Coef$Pr...z.. < 0.05,])[-1]
+        row.names(Coef[Coef$Pr...z.. < 0.05,]) 
+      
+      var_significativas <- var_significativas[!agrepl("Intercept", var_significativas)]
       
       res_Step_VIF_Pv <- data.frame(
         "Metodo" = "Step Forward + vif + pv",

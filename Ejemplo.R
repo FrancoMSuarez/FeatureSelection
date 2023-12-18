@@ -2,6 +2,7 @@ library(Boruta)
 library(caret)
 library(parallel)
 library(stringr)
+library(ggplot2)
 source("scr/Ajuste.R")
 source("scr/FeatureSelection.R")
 
@@ -17,7 +18,7 @@ poroto <-
 set.seed(1234)
 seleccion <- FeatureSelection(data  = poroto, 
                               name_respuesta = "Y", 
-                              step = 100,
+                              step = 110,
                               method = c('boruta', 'ag',
                                          'Filtrado', 'Stepwise',
                                          'stepVIF','Lasso'),
@@ -58,9 +59,10 @@ validacion <- Ajustes(data = poroto,
                       method_cv = "boot",
                       number = 10,
                       Model= c('glm','rf'),
-                      plotroc = T,
+                      plotroc = c("both","rf","glm"),
                       n = 5)
 
+validacion$Plot$both
 
 resumen <- validacion$Metricas |> dplyr::group_by(Modelo, Seleccion) |> 
   dplyr::summarise(dplyr::across(!n,
